@@ -1,52 +1,58 @@
 pipeline {
+    agent none
 
-    agent none   // controller does nothing
+    // ✅ Trigger on GitHub push
+    triggers {
+        githubPush()
+    }
 
     options {
         timestamps()
-        disableConcurrentBuilds()
     }
 
     stages {
 
-        stage('Build on mac-agent') {
-            agent { label 'mac-agent' }
+        stage('Parallel Build & Test') {
+            parallel {
 
-            steps {
-                checkout scm
-                sh '''
-                    echo "=============================="
-                    echo "BUILD STAGE"
-                    echo "Running on host: $(hostname)"
-                    echo "Workspace: $(pwd)"
-                    echo "=============================="
-                    chmod +x app/app.sh
-                    ./app/app.sh
-                '''
-            }
-        }
+                stage('Build on mac-agent') {
+                    agent { label 'mac-agent' }
+                    steps {
+                        echo "=============================="
+                        echo "BUILD STAGE"
+                        echo "Node: ${env.NODE_NAME}"
+                        sh '''
+                            echo "Hostname: $(hostname)"
+                            echo "Workspace: $(pwd)"
+                            chmod +x app/app.sh
+                            ./app/app.sh
+                        '''
+                        echo "=============================="
+                    }
+                }
 
-        stage('Test on node-mac1') {
-            agent { label 'node-mac1' }
-
-            steps {
-                checkout scm
-                sh '''
-                    echo "=============================="
-                    echo "TEST STAGE"
-                    echo "Running on host: $(hostname)"
-                    echo "Workspace: $(pwd)"
-                    echo "=============================="
-                    chmod +x tests/test.sh
-                    ./tests/test.sh
-                '''
+                stage('Test on node-mac1') {
+                    agent { label 'node-mac1' }
+                    steps {
+                        echo "=============================="
+                        echo "TEST STAGE"
+                        echo "Node: ${env.NODE_NAME}"
+                        sh '''
+                            echo "Hostname: $(hostname)"
+                            echo "Workspace: $(pwd)"
+                            chmod +x tests/test.sh
+                            ./tests/test.sh
+                        '''
+                        echo "=============================="
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo "✅ PIPELINE SUCCESS"
+            echo "✅ PIPELINE SUCCESS (Triggered by GitHub Push)"
         }
         failure {
             echo "❌ PIPELINE FAILED"
