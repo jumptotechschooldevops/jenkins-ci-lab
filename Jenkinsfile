@@ -1,49 +1,50 @@
 pipeline {
     agent none
 
-    // ✅ Trigger on GitHub push
     triggers {
         githubPush()
     }
 
     options {
         timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
 
-        stage('Parallel Build & Test') {
+        stage('Checkout') {
+            agent { label 'mac-agent' }
+            steps {
+                checkout scm
+                sh '''
+                  echo "Repository checked out"
+                  echo "Branch: $(git branch --show-current)"
+                '''
+            }
+        }
+
+        stage('Build & Test (Parallel)') {
             parallel {
 
-                stage('Build on mac-agent') {
+                stage('Build') {
                     agent { label 'mac-agent' }
                     steps {
-                        echo "=============================="
-                        echo "BUILD STAGE"
-                        echo "Node: ${env.NODE_NAME}"
                         sh '''
-                            echo "Hostname: $(hostname)"
-                            echo "Workspace: $(pwd)"
-                            chmod +x app/app.sh
-                            ./app/app.sh
+                          echo "===== BUILD ====="
+                          chmod +x app/app.sh
+                          ./app/app.sh
                         '''
-                        echo "=============================="
                     }
                 }
 
-                stage('Test on node-mac1') {
+                stage('Test') {
                     agent { label 'node-mac1' }
                     steps {
-                        echo "=============================="
-                        echo "TEST STAGE"
-                        echo "Node: ${env.NODE_NAME}"
                         sh '''
-                            echo "Hostname: $(hostname)"
-                            echo "Workspace: $(pwd)"
-                            chmod +x tests/test.sh
-                            ./tests/test.sh
+                          echo "===== TEST ====="
+                          chmod +x tests/test.sh
+                          ./tests/test.sh
                         '''
-                        echo "=============================="
                     }
                 }
             }
@@ -52,10 +53,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ PIPELINE SUCCESS (Triggered by GitHub Push)"
+            echo '✅ PIPELINE SUCCESS'
         }
         failure {
-            echo "❌ PIPELINE FAILED"
+            echo '❌ PIPELINE FAILED'
         }
     }
 }
