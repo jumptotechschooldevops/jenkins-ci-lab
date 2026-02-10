@@ -1,5 +1,6 @@
 pipeline {
-    agent none   // Controller does NOT execute anything
+
+    agent none   // controller does nothing
 
     options {
         timestamps()
@@ -10,6 +11,7 @@ pipeline {
 
         stage('Build on mac-agent') {
             agent { label 'mac-agent' }
+
             steps {
                 checkout scm
                 sh '''
@@ -18,6 +20,7 @@ pipeline {
                     echo "Running on host: $(hostname)"
                     echo "Workspace: $(pwd)"
                     echo "=============================="
+                    chmod +x app/app.sh
                     ./app/app.sh
                 '''
             }
@@ -25,6 +28,7 @@ pipeline {
 
         stage('Test on node-mac1') {
             agent { label 'node-mac1' }
+
             steps {
                 checkout scm
                 sh '''
@@ -33,6 +37,7 @@ pipeline {
                     echo "Running on host: $(hostname)"
                     echo "Workspace: $(pwd)"
                     echo "=============================="
+                    chmod +x tests/test.sh
                     ./tests/test.sh
                 '''
             }
@@ -45,9 +50,6 @@ pipeline {
         }
         failure {
             echo "❌ PIPELINE FAILED"
-        }
-        always {
-            cleanWs()
         }
     }
 }
