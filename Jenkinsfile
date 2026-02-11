@@ -1,50 +1,37 @@
 pipeline {
-    agent none
+    agent any
 
     triggers {
         githubPush()
     }
 
-    options {
-        timestamps()
-        disableConcurrentBuilds()
-    }
-
     stages {
-
         stage('Checkout') {
-            agent { label 'mac-agent' }
             steps {
                 checkout scm
-                sh '''
-                  echo "Repository checked out"
-                  echo "Branch: $(git branch --show-current)"
-                '''
             }
         }
 
-        stage('Build & Test (Parallel)') {
+        stage('Parallel Jobs') {
             parallel {
-
-                stage('Build') {
-                    agent { label 'mac-agent' }
+                stage('Lint') {
                     steps {
-                        sh '''
-                          echo "===== BUILD ====="
-                          chmod +x app/app.sh
-                          ./app/app.sh
-                        '''
+                        echo 'Running lint'
+                        sleep 3
                     }
                 }
 
-                stage('Test') {
-                    agent { label 'node-mac1' }
+                stage('Unit Tests') {
                     steps {
-                        sh '''
-                          echo "===== TEST ====="
-                          chmod +x tests/test.sh
-                          ./tests/test.sh
-                        '''
+                        echo 'Running unit tests'
+                        sleep 5
+                    }
+                }
+
+                stage('Build') {
+                    steps {
+                        echo 'Building application'
+                        sleep 4
                     }
                 }
             }
@@ -53,10 +40,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ PIPELINE SUCCESS'
+            echo 'Pipeline completed successfully'
         }
         failure {
-            echo '❌ PIPELINE FAILED'
+            echo 'Pipeline failed'
         }
     }
 }
